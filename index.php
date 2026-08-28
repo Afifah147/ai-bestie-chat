@@ -1,6 +1,6 @@
 <?php
-// PENTING: Ganti dengan API Key milikmu yang berawalan "AIza..."
-$api_key = ""; 
+// Memanggil API Key dari file terpisah yang aman dari GitHub Secret Scanning
+include 'config.php'; 
 
 // --- BLOK PENANGANAN AJAX (BACKEND) ---
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["ajax"])) {
@@ -69,13 +69,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["ajax"])) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Bestie - Puter.js Instant Voice</title>
+    <title>AI Bestie - Instant Local Voice</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     
-    <!-- Script Puter.js untuk Text-to-Speech Instan Tanpa API Key -->
-    <script src="https://js.puter..com/v2/"></script>
-
     <style>
         :root {
             --bg-gradient: radial-gradient(circle at top left, #fbcfe8, #f3e8ff, #e0e7ff);
@@ -339,16 +336,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["ajax"])) {
             <!-- Header -->
             <div class="chat-header">
                 <div>
-                    <h4 class="header-glow">🌸 AI Bestie (Cloud Voice) 🌸</h4>
+                    <h4 class="header-glow">🌸 AI Bestie 🌸</h4>
                     <span class="online-status" id="onlineStatus">● Online</span>
                 </div>
                 <div class="header-tools">
-                    <!-- Dropdown Pilihan Suara Cloud Instan -->
-                    <select id="voiceStyle" class="voice-select" title="Pilih Karakter Suara">
-                        <option value="eve">✨ Eve (Energik & Ceria)</option>
-                        <option value="ara">🌸 Ara (Hangat & Lembut)</option>
-                        <option value="rex">🚀 Rex (Percaya Diri)</option>
-                        <option value="sal">☕ Sal (Halus & Santai)</option>
+                    <select id="voiceStyle" class="voice-select" title="Pilih Gaya Suara">
+                        <option value="imut">🌸 Imut (Ceria)</option>
+                        <option value="semangat">⚡ Semangat</option>
+                        <option value="cool">😎 Cool / Santai</option>
+                        <option value="normal">✨ Normal</option>
                     </select>
                     <button type="button" class="btn-tool" onclick="toggleDarkMode()" title="Ganti Tema"><i class="bi bi-moon-stars-fill" id="themeIcon"></i></button>
                     <button type="button" class="btn-tool" onclick="clearHistory()" title="Hapus Riwayat">Hapus</button>
@@ -438,26 +434,31 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["ajax"])) {
             }
         });
 
-        // --- PEMROSESAN SUARA VIA PUTER.JS CLOUD TTS ---
-        function bacaTeks(text, btnElement) {
-            const selectedVoice = voiceStyleSelect.value; // eve, ara, rex, atau sal
-            
-            btnElement.disabled = true;
-            btnElement.innerHTML = '<i class="bi bi-arrow-repeat spin"></i>';
+        function bacaTeks(text) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel(); 
+                const kalimat = new SpeechSynthesisUtterance(text);
+                kalimat.lang = 'id-ID';
 
-            // Memanggil API Text-to-Speech Puter.js secara instan tanpa kunci API
-            puter.ai.txt2speech(text, { provider: "xai", voice: selectedVoice, output_format: "mp3" })
-                .then(audio => {
-                    btnElement.disabled = false;
-                    btnElement.innerHTML = '<i class="bi bi-volume-up-fill"></i>';
-                    audio.play();
-                })
-                .catch(error => {
-                    btnElement.disabled = false;
-                    btnElement.innerHTML = '<i class="bi bi-volume-up-fill"></i>';
-                    console.error("Gagal memutar audio:", error);
-                    alert("Gagal memuat suara cloud. Pastikan internet aktif.");
-                });
+                const style = voiceStyleSelect.value;
+                if (style === 'imut') {
+                    kalimat.pitch = 1.5;
+                    kalimat.rate = 1.15;
+                } else if (style === 'semangat') {
+                    kalimat.pitch = 1.2; 
+                    kalimat.rate = 1.3;
+                } else if (style === 'cool') {
+                    kalimat.pitch = 0.7;
+                    kalimat.rate = 0.9;
+                } else {
+                    kalimat.pitch = 1.0;
+                    kalimat.rate = 1.0;
+                }
+
+                window.speechSynthesis.speak(kalimat);
+            } else {
+                alert("Browser tidak mendukung suara.");
+            }
         }
 
         function handleImageSelect(event) {
@@ -484,20 +485,20 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["ajax"])) {
         document.addEventListener("DOMContentLoaded", loadChatHistory);
 
         function saveMessageToStorage(sender, text, imgData = null, liked = false) {
-            let history = JSON.parse(localStorage.getItem('ai_chat_puter')) || [];
+            let history = JSON.parse(localStorage.getItem('ai_chat_fast_voice')) || [];
             history.push({ sender, text, img: imgData, liked });
-            localStorage.setItem('ai_chat_puter', JSON.stringify(history));
+            localStorage.setItem('ai_chat_fast_voice', JSON.stringify(history));
         }
 
         function updateLikeInStorage(index, likedStatus) {
-            let history = JSON.parse(localStorage.getItem('ai_chat_puter')) || [];
-            if (history[index]) { history[index].liked = likedStatus; localStorage.setItem('ai_chat_puter', JSON.stringify(history)); }
+            let history = JSON.parse(localStorage.getItem('ai_chat_fast_voice')) || [];
+            if (history[index]) { history[index].liked = likedStatus; localStorage.setItem('ai_chat_fast_voice', JSON.stringify(history)); }
         }
 
         function loadChatHistory() {
-            let history = JSON.parse(localStorage.getItem('ai_chat_puter')) || [];
+            let history = JSON.parse(localStorage.getItem('ai_chat_fast_voice')) || [];
             if (history.length === 0) {
-                addMessageToDOM('ai', 'Halo bestie! Sekarang suara cloud-nya udah aktif. Pilih karakter suara di pojok kanan atas, lalu klik ikon speaker ya! 🌸✨', false, 0);
+                addMessageToDOM('ai', 'Halo bestie! Kode udah dipisah pakai config.php jadi aman buat di-push ke GitHub. ✨🌸', false, 0);
             } else {
                 history.forEach((item, index) => addMessageToDOM(item.sender, item.text, item.img, item.liked, index));
             }
@@ -505,7 +506,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["ajax"])) {
 
         function clearHistory() {
             if (confirm("Hapus riwayat?")) {
-                localStorage.removeItem('ai_chat_puter');
+                localStorage.removeItem('ai_chat_fast_voice');
                 chatBox.innerHTML = '';
                 addMessageToDOM('ai', 'Riwayat dibersihkan! 🌸', false, 0);
             }
@@ -532,7 +533,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["ajax"])) {
                 const speakerBtn = document.createElement('button');
                 speakerBtn.className = 'btn-speaker';
                 speakerBtn.innerHTML = '<i class="bi bi-volume-up-fill"></i>';
-                speakerBtn.onclick = function() { bacaTeks(text, this); };
+                speakerBtn.onclick = () => bacaTeks(text);
                 footer.appendChild(speakerBtn);
 
                 const reactBtn = document.createElement('button');
@@ -566,7 +567,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["ajax"])) {
 
             playSendSound();
 
-            const historyLength = JSON.parse(localStorage.getItem('ai_chat_puter'))?.length || 0;
+            const historyLength = JSON.parse(localStorage.getItem('ai_chat_fast_voice'))?.length || 0;
             addMessageToDOM('user', text, currentImgDataUrl, false, historyLength);
             saveMessageToStorage('user', text, currentImgDataUrl, false);
             
@@ -588,7 +589,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["ajax"])) {
             .then(data => {
                 typingIndicator.style.display = 'none'; onlineStatus.textContent = "● Online";
                 if (data.status === 'success') {
-                    const newLen = JSON.parse(localStorage.getItem('ai_chat_puter'))?.length || 0;
+                    const newLen = JSON.parse(localStorage.getItem('ai_chat_fast_voice'))?.length || 0;
                     addMessageToDOM('ai', data.message, null, false, newLen);
                     saveMessageToStorage('ai', data.message, null, false);
                 } else { alert("Error: " + data.message); }
